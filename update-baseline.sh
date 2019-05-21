@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Usage:
+# update-baseline.sh -y -p -g path/to/gapic-generator java python ruby
+#
+# if -y is specified, baseline files generated through library_gapic.yaml will be updated.
+# if -p is specified, baseline files generated through proto annotations and library_gapic_v2.yaml will be updated.
+#
+# Or, export GAPICGENERATOR=path/to/gapic-generator
+# and run `update-baseline.sh -y -p java python`
+#
+#
+# To update baseline files for all languages, run
+# `update-baseline.sh -y -p` or `update-baseline.sh -y -p all`
+#
+#
+
+
 ! getopt --test > /dev/null 
 if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     echo 'I’m sorry, `getopt --test` failed in this environment.'
