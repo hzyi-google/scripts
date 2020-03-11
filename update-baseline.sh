@@ -22,8 +22,8 @@ if [[ ${PIPESTATUS[0]} -ne 4 ]]; then
     exit 1
 fi
 
-OPTIONS=g:yp
-LONGOPTS=gapic-generator:gapic-yaml,proto-annotation
+OPTIONS=g:ypsr
+LONGOPTS=gapic-generator:gapic-yaml,proto-annotation,samplegen,retry
 
 ! PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@")
 if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
@@ -35,7 +35,8 @@ eval set -- "$PARSED"
 GAPIC_GENERATOR_DIR=$GAPICGENERATOR
 gapic_yaml=0
 proto_annotation=0
-
+samplegen=0
+retryconfig=0
 
 while true; do
 	case "$1" in
@@ -51,6 +52,14 @@ while true; do
       proto_annotation=1
       shift
       ;;
+    -s|--samplegen)
+    	samplegen=1
+    	shift
+    	;;
+    -r|--retry)
+			retryconfig=1
+			shift
+			;;
     --)
 			shift
 			break
@@ -89,32 +98,64 @@ to_dir_proto_prefix="${GAPIC_GENERATOR_DIR}/src/test/java/com/google/api/codegen
 from_dir=""
 to_dir=""
 
-set_from_to_dir(){
-	if [[ "$2" -eq 0 ]]; then
-		from_dir="${from_dir_gapic_prefix}${1}_library.baseline"
-		if [[ "$1" = "python" ]] ; then
-			to_dir="${to_dir_gapic_prefix}py/${1}_library.baseline"
-		else
-			to_dir="${to_dir_gapic_prefix}${1}/"
-		fi
+set_from_to_dir_gapic_yaml()
+{
+  from_dir="${from_dir_gapic_prefix}${1}_library.baseline"
+	if [[ "$1" = "python" ]] ; then
+		to_dir="${to_dir_gapic_prefix}py/${1}_library.baseline"
 	else
-		from_dir="${from_dir_proto_prefix}${1}_library.baseline"
-		to_dir="${to_dir_proto_prefix}${1}_library.baseline"
+		to_dir="${to_dir_gapic_prefix}${1}/"
+	fi
+}
+
+set_from_to_dir_protoannotations()
+{
+	from_dir="${from_dir_proto_prefix}${1}_library.baseline"
+	to_dir="${to_dir_proto_prefix}${1}_library.baseline"
+}
+
+set_from_to_dir_samplegen_migration()
+{
+	from_dir="${from_dir_gapic_prefix}${1}_samplegen_config_migration_library.baseline"
+	if [[ "$1" = "python" ]] ; then
+		to_dir="${to_dir_gapic_prefix}py/${1}_samplegen_config_migration_library.baseline"
+	else
+		to_dir="${to_dir_gapic_prefix}${1}/${1}_samplegen_config_migration_library.baseline"
+	fi
+}
+
+set_from_to_dir_retry_config()
+{
+	from_dir="${from_dir_proto_prefix}${1}_library_with_grpc_service_config.baseline"
+	if [[ "$1" = "python" ]] ; then
+		to_dir="${to_dir_proto_prefix}${1}_library_with_grpc_service_config.baseline"
+	else
+		to_dir="${to_dir_proto_prefix}${1}_library_with_grpc_service_config.baseline"
 	fi
 }
 
 for lang in "${langs[@]}"
 do
 	if [[ $gapic_yaml -eq 1 ]]; then
-		set_from_to_dir $lang $gapic_yaml
+		set_from_to_dir_gapic_yaml $lang
 		cp "${from_dir}" "${to_dir}"
 		echo "${lang} gapic copied."
 	fi
 	if [[ $proto_annotation -eq 1 ]]; then
-		set_from_to_dir $lang $(( 1 - $proto_annotation ))
+		set_from_to_dir_protoannotations $lang
 		cp "${from_dir}" "${to_dir}"
 		echo "${lang} protoannotations copied."
 	fi
+	if [[ $samplegen -eq 1 ]]; then
+		set_from_to_dir_samplegen_migration $lang
+		cp "${from_dir}" "${to_dir}"
+		echo "${lang} samplegen config copied."
+	fi
+	if [[ $retryconfig -eq 1 ]]; then
+		set_from_to_dir_retry_config $lang
+		cp "${from_dir}" "${to_dir}"
+		echo "${lang} retry config copied."
+	fi	
 done
 
 echo "Done."

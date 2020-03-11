@@ -28,11 +28,9 @@ do
 	samples_arr+=($i)
 done
 
-echo "${samples_arr[@]}"
-
 gen-go-sample \
   --clientpkg "cloud.google.com/go/$1/api$2;$1" \
-  --gapic "$GOOGLEAPIS/google/cloud/$1/$2/$1_gapic.yaml" \
+  --gapic "$GOOGLEAPIS/google/cloud/$1/$2/$1_gapic.legacy.yaml" \
   --o $WORKSPACE/go-output \
   "${samples_arr[@]}" \
   --desc <(protoc -o /dev/stdout --include_imports -I "$COMMON_PROTO" -I "$GOOGLEAPIS" "$GOOGLEAPIS/google/cloud/$1/$2"/*.proto)
